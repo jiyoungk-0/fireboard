@@ -138,7 +138,7 @@
   }
   .today {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--ink-faint);
   }
   .icon-btn {
@@ -180,12 +180,12 @@
     margin-top: 6px;
   }
   .hero-note {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--ink-faint);
     margin-top: 4px;
   }
   .hero-compare {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--ink-faint);
     margin-top: 6px;
     font-variant-numeric: tabular-nums;
@@ -213,7 +213,7 @@
   }
   .progress-label {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--gold);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
@@ -259,7 +259,7 @@
     border: none;
     color: var(--ink-faint);
     font-family: 'IBM Plex Sans KR', sans-serif;
-    font-size: 11px;
+    font-size: 13px;
     padding: 5px 10px;
     border-radius: 6px;
     cursor: pointer;
@@ -268,12 +268,12 @@
   .currency-toggle button:focus-visible { outline: 1px solid var(--gold); outline-offset: 1px; }
 
   .section-hint {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--ink-faint);
     margin: -6px 0 14px;
   }
   .disclaimer {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--ink-faint);
     text-align: center;
     margin: 20px 0 4px;
@@ -332,7 +332,7 @@
   .row-icon svg { width: 16px; height: 16px; }
   .ledger-mid p { margin: 0; }
   .ledger-name { font-size: 14px; font-weight: 500; }
-  .ledger-detail { font-size: 11px; color: var(--ink-faint); margin-top: 2px !important; }
+  .ledger-detail { font-size: 13px; color: var(--ink-faint); margin-top: 2px !important; }
   .ledger-amount {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 14px;
@@ -355,7 +355,7 @@
   .row-delete, .row-edit {
     background: none;
     border: 1px solid var(--card-border);
-    font-size: 11px;
+    font-size: 13px;
     padding: 6px 10px;
     border-radius: 7px;
     cursor: pointer;
@@ -384,7 +384,7 @@
     margin-bottom: 10px;
   }
   .goal-title { font-size: 13px; font-weight: 500; }
-  .goal-target { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+  .goal-target { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-faint); }
   .goal-figure {
     font-weight: 700;
     font-size: 21px;
@@ -393,7 +393,48 @@
     font-variant-numeric: tabular-nums;
   }
   .goal-figure .unit { font-size: 13px; color: var(--ink-soft); font-weight: 400; }
-  .goal-note { font-size: 11px; color: var(--ink-soft); margin-top: 8px; }
+  .goal-note { font-size: 13px; color: var(--ink-soft); margin-top: 8px; }
+
+  /* ---- Yearly asset trend chart ---- */
+  .year-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 140px;
+    padding: 0 2px;
+  }
+  .year-bar-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+  }
+  .year-bar-value {
+    font-size: 12px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .year-bar-col.is-current .year-bar-value { color: var(--gold); font-weight: 600; }
+  .year-bar {
+    width: 70%;
+    max-width: 22px;
+    background: var(--gold);
+    border-radius: 3px 3px 0 0;
+    min-height: 3px;
+  }
+  .year-bar.empty { background: var(--bg-line); }
+  .year-bar.projected { background: var(--ink); }
+  .year-bar-label {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 6px;
+    white-space: nowrap;
+  }
 
   /* ---- Stock holding rows ---- */
   .stock-summary {
@@ -407,9 +448,9 @@
     border-radius: 10px;
     padding: 14px;
   }
-  .stock-summary .cell p:first-child { font-size: 11px; color: var(--ink-soft); margin: 0 0 6px; }
+  .stock-summary .cell p:first-child { font-size: 13px; color: var(--ink-soft); margin: 0 0 6px; }
   .stock-summary .cell p.cell-value { font-weight: 600; font-size: 17px; margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
-  .stock-summary .cell p.cell-sub { font-size: 11px; font-weight: 500; margin: 3px 0 0; font-variant-numeric: tabular-nums; }
+  .stock-summary .cell p.cell-sub { font-size: 13px; font-weight: 500; margin: 3px 0 0; font-variant-numeric: tabular-nums; }
 
   .holding-row {
     display: grid;
@@ -420,9 +461,9 @@
     cursor: pointer;
   }
   .holding-name { font-size: 14px; font-weight: 500; margin: 0; }
-  .holding-detail { font-size: 11px; color: var(--ink-faint); margin: 3px 0 0; }
+  .holding-detail { font-size: 13px; color: var(--ink-faint); margin: 3px 0 0; }
   .holding-amount { font-family: 'IBM Plex Mono', monospace; font-size: 14px; text-align: right; font-variant-numeric: tabular-nums; }
-  .holding-yield { font-size: 11px; text-align: right; margin: 3px 0 0; }
+  .holding-yield { font-size: 13px; text-align: right; margin: 3px 0 0; }
 
   /* ---- Bottom nav ---- */
   nav.tabbar {
@@ -441,7 +482,7 @@
     border: none;
     padding: 12px 0 10px;
     font-family: 'IBM Plex Sans KR', sans-serif;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--ink-faint);
     display: flex;
     flex-direction: column;
@@ -498,7 +539,7 @@
   }
   .sheet p.hint { font-size: 12px; color: var(--ink-soft); margin: 0 0 18px; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-  .field label { font-size: 11px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
+  .field label { font-size: 13px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
   .field input, .field select {
     width: 100%;
     font-family: 'IBM Plex Sans KR', sans-serif;
@@ -555,10 +596,10 @@
   }
   .full-fields { display: block; }
   .full-fields.hidden { display: none; }
-  .field-note { font-size: 11px; color: var(--ink-faint); margin: -4px 0 14px; }
-  .field-hint { font-size: 11px; color: var(--ink-soft); margin: 4px 2px 0; min-height: 14px; }
+  .field-note { font-size: 13px; color: var(--ink-faint); margin: -4px 0 14px; }
+  .field-hint { font-size: 13px; color: var(--ink-soft); margin: 4px 2px 0; min-height: 14px; }
   .hero-hint { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
-  .goal-assumption { font-size: 11px; color: var(--ink-faint); margin: 2px 0 8px; }
+  .goal-assumption { font-size: 13px; color: var(--ink-faint); margin: 2px 0 8px; }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
@@ -611,6 +652,11 @@
 
     <div class="divider"></div>
 
+    <h2 id="year-chart-title">배당·이자 추이</h2>
+    <div class="year-chart" id="year-chart"></div>
+
+    <div class="divider"></div>
+
     <h2>이번 달 배당·이자</h2>
     <div class="hero-amount" style="font-size:28px;" id="monthly-income">₩0</div>
     <div class="hero-hint" id="monthly-income-hint">0원</div>
@@ -624,7 +670,10 @@
 
     <div class="divider"></div>
 
-    <h2>파이어까지 🔥</h2>
+    <div class="section-title-row" style="margin-top:0;">
+      <h2>파이어까지 🔥</h2>
+      <button type="button" class="icon-btn" id="btn-goal-edit" aria-label="목표 수정" style="width:auto; color:var(--gold); font-size:12px;">목표 수정</button>
+    </div>
     <div class="goal-card featured">
       <div class="goal-top">
         <span class="goal-title">패시브인컴 목표</span>
@@ -635,8 +684,9 @@
         <div class="progress-label" id="fire-progress-label">0%</div>
       </div>
       <div class="goal-assumption" id="fire-assumption">예상 연 배당률 0% 가정 · 세전 기준 역산</div>
-      <div class="goal-note">설정에서 월 목표 소득과 연 배당률을 바꿀 수 있어요</div>
+      <div class="goal-note">위 '목표 수정'에서 월 목표 소득과 연 배당률을 바꿀 수 있어요</div>
     </div>
+
     <p class="disclaimer">이 앱은 특정 투자를 추천하지 않아요</p>
   </section>
 
@@ -708,7 +758,7 @@
     <p class="disclaimer">이 앱은 특정 투자를 추천하지 않아요</p>
   </section>
 
-  <button class="fab" id="btn-fab" aria-label="추가">+</button>
+  <button class="fab hidden" id="btn-fab" aria-label="추가">+</button>
 
   <nav class="tabbar">
     <button class="active" data-view="dashboard">
@@ -859,6 +909,15 @@
     <div class="sheet">
       <button class="close" id="btn-settings-close">닫기</button>
       <h3>설정</h3>
+      <button class="logout" id="btn-logout">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- ===== 목표 수정 시트 ===== -->
+  <div class="sheet-backdrop" id="goal-backdrop">
+    <div class="sheet">
+      <button class="close" id="btn-goal-close">닫기</button>
+      <h3>목표 수정</h3>
       <p class="hint">목표 금액은 대시보드 진행률 계산에 쓰여요</p>
 
       <form id="settings-form">
@@ -875,7 +934,6 @@
         </div>
         <button type="submit" class="submit">저장하기</button>
       </form>
-      <button class="logout" id="btn-logout">로그아웃</button>
     </div>
   </div>
 

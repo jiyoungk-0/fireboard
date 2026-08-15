@@ -75,6 +75,8 @@ let lastMonthSnapshot = null;
 let lastYearSnapshot = null;
 let snapshotSavedToday = false;
 let snapshotsLoaded = false;
+let yearlyHistory = [];
+let yearlyHistoryLoaded = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -188,6 +190,99 @@ function compareLineHtml(current, monthAgo, yearAgo) {
   return `전달 대비 ${m} · 전년 대비 ${y}`;
 }
 
+// ---- 올해 1~12월 배당·이자 추이 (월별 막대그래프) ----
+// 이번 달 막대는 history 스냅샷(오늘 저장이 아직 반영 전일 수 있음)이 아니라
+// renderDashboard()가 매번 계산하는 실시간 monthlyIncome(currentMonthLiveIncome)을 우선한다.
+// 아직 지나지 않은 달(다음 달~12월)은 실기록이 없으니, 지금 등록된 계좌·주식을 바탕으로
+// 배당 주기(월/분기/반기/연)에 맞춰 그 달에 실제로 들어올 예상 금액을 계산해서 보여준다.
+let currentMonthLiveIncome = null;
+function buildMonthKeys() {
+  const year = new Date().getFullYear();
+  const months = [];
+  for (let m = 1; m <= 12; m++) {
+    months.push({ key: `${year}-${String(m).padStart(2, '0')}`, label: `${m}월`, month: m });
+  }
+  return months;
+}
+function projectedMonthlyIncome(monthDate) {
+  // 이자는 매달 크게 변하지 않으니 현재 계좌 기준 월 이자를 그대로 유지한다고 가정하고,
+  // 배당은 종목별 지급 주기·지급월을 기준으로 그 달에 실제 지급되는 종목만 합산한다.
+  const interest = accounts.reduce((sum, a) => sum + accountMonthlyInterest(a), 0);
+  const dividend = holdings.reduce((sum, h) => sum + holdingMonthlyDividend(h, monthDate), 0);
+  return interest + dividend;
+}
+async function loadYearlyHistory() {
+  if (yearlyHistoryLoaded || !uid) return;
+  yearlyHistoryLoaded = true;
+  const months = buildMonthKeys();
+  const currentMonthNum = new Date().getMonth() + 1;
+  const year = new Date().getFullYear();
+  const buildEntry = (m, byMonth) => {
+    const isCurrent = m.month === currentMonthNum;
+    const isFuture = m.month > currentMonthNum;
+    let value = byMonth ? (byMonth[m.key]?.monthlyIncome ?? null) : null;
+    if (isFuture) value = projectedMonthlyIncome(new Date(year, m.month - 1, 1));
+    return { label: m.label, isCurrent, isFuture, value };
+  };
+  yearlyHistory = months.map(m => buildEntry(m, null));
+  renderYearlyChart();
+  const oldestStart = new Date(`${year}-01-01`);
+  try {
+    const q = query(
+      collection(db, 'users', uid, 'history'),
+      where(documentId(), '>=', dateStr(oldestStart)),
+      orderBy(documentId(), 'asc')
+    );
+    const snap = await getDocs(q);
+    const byMonth = {};
+    snap.docs.forEach((docSnap) => {
+      const monthKey = docSnap.id.slice(0, 7);
+      byMonth[monthKey] = docSnap.data(); // asc 정렬이라 같은 달의 마지막(최신) 기록이 남는다
+    });
+    yearlyHistory = months.map(m => buildEntry(m, byMonth));
+  } catch (err) {
+    console.error('yearly history fetch failed', err);
+  }
+  renderYearlyChart();
+}
+function formatChartUnit(n) {
+  n = Math.round(n || 0);
+  const eok = n / 100000000;
+  if (Math.abs(eok) >= 1) {
+    const r = Math.round(eok * 10) / 10;
+    return (Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1)) + '억';
+  }
+  const man = Math.round(n / 10000);
+  if (man) return man.toLocaleString('ko-KR') + '만';
+  return formatPlain(n);
+}
+function renderYearlyChart() {
+  const container = $('year-chart');
+  if (!container || !yearlyHistory.length) return;
+  const titleEl = $('year-chart-title');
+  if (titleEl) titleEl.textContent = `${new Date().getFullYear()}년 배당·이자 추이`;
+  const bars = yearlyHistory.map(d => ({
+    ...d,
+    value: d.isCurrent && currentMonthLiveIncome != null ? currentMonthLiveIncome : d.value
+  }));
+  const values = bars.map(d => d.value).filter(v => v != null && v > 0);
+  const max = values.length ? Math.max(...values) : 0;
+  container.innerHTML = bars.map(d => {
+    const hasData = d.value != null;
+    const pct = hasData && max > 0 ? Math.max(4, Math.round((d.value / max) * 100)) : 3;
+    const valueLabel = hasData ? formatChartUnit(d.value) : '-';
+    const tooltip = hasData
+      ? `${d.label}${d.isFuture ? ' (예상)' : ''}: ${formatPlain(d.value)}원`
+      : `${d.label}: 기록 없음`;
+    return `
+      <div class="year-bar-col${d.isCurrent ? ' is-current' : ''}">
+        <div class="year-bar-value">${valueLabel}</div>
+        <div class="year-bar${hasData ? '' : ' empty'}${d.isFuture ? ' projected' : ''}" style="height:${pct}%" title="${tooltip}"></div>
+        <div class="year-bar-label">${d.label}</div>
+      </div>`;
+  }).join('');
+}
+
 // ---- Auth ----
 // 사파리/인앱 브라우저(카카오톡, 인스타그램 등)에서는 팝업 로그인이 저장소 제한으로
 // "missing initial state" 에러를 내며 실패하는 경우가 많아, 실패 시 리다이렉트 방식으로 전환한다.
@@ -264,6 +359,7 @@ function subscribeAll() {
   });
 
   loadComparisonSnapshots();
+  loadYearlyHistory();
 }
 
 // 손으로 끌어서 순서 바꾸기 (iOS 스타일). 컨테이너마다 Sortable 인스턴스를 두고,
@@ -305,6 +401,7 @@ function switchTab(name, btn) {
   $('view-' + name).classList.add('active');
   document.querySelectorAll('.tabbar button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  $('btn-fab').classList.toggle('hidden', name === 'dashboard');
 }
 
 // ---- Formatting helpers ----
@@ -500,8 +597,8 @@ function isDividendPayingThisMonth(h, today = new Date()) {
 }
 // 미국 상장 종목 배당은 한미 조세조약에 따라 원천에서 15% 미국 원천징수가 이미 빠진 채로 입금된다.
 // (한국 이자소득세 15.4%와는 다른 세율이라 구분해서 적용 — 국내 종목/이자는 세전 그대로 유지)
-function holdingMonthlyDividend(h) {
-  if (!isDividendPayingThisMonth(h)) return 0;
+function holdingMonthlyDividend(h, today = new Date()) {
+  if (!isDividendPayingThisMonth(h, today)) return 0;
   const freq = DIV_FREQ[h.dividendFreq] ? h.dividendFreq : 'monthly';
   const paymentsPerYear = 12 / DIV_FREQ[freq].intervalMonths;
   const usWithholding = h.currency === 'USD' ? 0.85 : 1;
@@ -529,6 +626,8 @@ function renderDashboard() {
   $('total-assets-compare').innerHTML = compareLineHtml(totalAssets, lastMonthSnapshot?.totalAssets, lastYearSnapshot?.totalAssets);
   $('monthly-income-compare').innerHTML = compareLineHtml(monthlyIncome, lastMonthSnapshot?.monthlyIncome, lastYearSnapshot?.monthlyIncome);
   maybeSaveTodaySnapshot(totalAssets, monthlyIncome);
+  currentMonthLiveIncome = monthlyIncome;
+  renderYearlyChart();
 
   const incomeGoal = settings.monthlyIncomeGoal || 1;
   const incomePct = Math.min(100, (monthlyIncome / incomeGoal) * 100);
@@ -954,11 +1053,17 @@ $('account-form').addEventListener('submit', async (e) => {
   }
 });
 
-// ---- Settings sheet ----
+// ---- Settings sheet (로그아웃만) ----
 const settingsBackdrop = $('settings-backdrop');
 $('btn-settings').addEventListener('click', () => settingsBackdrop.classList.add('open'));
 $('btn-settings-close').addEventListener('click', closeSettings);
 function closeSettings() { settingsBackdrop.classList.remove('open'); }
+
+// ---- 목표 수정 시트 ----
+const goalBackdrop = $('goal-backdrop');
+$('btn-goal-edit').addEventListener('click', () => { fillSettingsForm(); goalBackdrop.classList.add('open'); });
+$('btn-goal-close').addEventListener('click', closeGoalSheet);
+function closeGoalSheet() { goalBackdrop.classList.remove('open'); }
 
 function fillSettingsForm() {
   $('s-income-goal').value = settings.monthlyIncomeGoal ? formatPlain(settings.monthlyIncomeGoal) : '';
@@ -984,5 +1089,5 @@ $('settings-form').addEventListener('submit', async (e) => {
     plannedYieldPct: parseFloat($('s-yield').value) || 0
   };
   await setDoc(doc(db, 'users', uid, 'meta', 'settings'), next, { merge: true });
-  closeSettings();
+  closeGoalSheet();
 });
