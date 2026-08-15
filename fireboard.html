@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>파이어보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #17130F;
+    --bg-line: rgba(243,235,221,0.1);
+    --ink: #F3EBDD;
+    --ink-soft: #B4A896;
+    --ink-faint: #766C5E;
+    --gold: #D9A84E;
+    --gold-dim: rgba(217,168,78,0.12);
+    --gold-border: rgba(217,168,78,0.35);
+    --up: #D9534A;
+    --down: #4A7FD9;
+    --card: rgba(243,235,221,0.05);
+    --card-border: rgba(243,235,221,0.08);
+    --tile: #1D1811;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--bg);
+    padding-bottom: 84px;
+    position: relative;
+  }
+
+  /* ---- Header / logo lockup ---- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 8px;
+  }
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-tile {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--tile);
+    border: 1px solid var(--bg-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-tile svg { width: 16px; height: 16px; }
+  .wordmark span {
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .today {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+
+  /* ---- Views ---- */
+  .view { display: none; padding: 4px 20px 20px; }
+  .view.active { display: block; }
+
+  .eyebrow {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 18px 0 6px;
+  }
+  .hero-amount {
+    font-weight: 700;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .hero-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+  .hero-sub.up { color: var(--up); }
+  .hero-sub.down { color: var(--down); }
+  .hero-note {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 3px;
+  }
+  .progress-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--bg-line);
+    margin: 26px 0;
+  }
+
+  h2 {
+    font-weight: 600;
+    font-size: 15px;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+
+  /* ---- Ledger rows ---- */
+  .ledger-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--bg-line);
+    cursor: pointer;
+  }
+  .row-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .row-icon svg { width: 16px; height: 16px; }
+  .ledger-mid p { margin: 0; }
+  .ledger-name { font-size: 14px; font-weight: 500; }
+  .ledger-detail { font-size: 11px; color: var(--ink-faint); margin-top: 2px !important; }
+  .ledger-amount {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .ledger-detailbox {
+    display: none;
+    padding: 0 0 14px 42px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--bg-line);
+  }
+  .ledger-detailbox.open { display: block; }
+  .ledger-detailbox div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .ledger-detailbox span:last-child { font-family: 'IBM Plex Mono', monospace; }
+
+  /* ---- Goal cards ---- */
+  .goal-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .goal-card.featured {
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+  }
+  .goal-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .goal-title { font-size: 13px; font-weight: 500; }
+  .goal-target { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+  .goal-figure {
+    font-weight: 700;
+    font-size: 21px;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .goal-figure .unit { font-size: 13px; color: var(--ink-soft); font-weight: 400; }
+  .goal-note { font-size: 11px; color: var(--ink-soft); margin-top: 8px; }
+
+  /* ---- Stock holding rows ---- */
+  .stock-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .stock-summary .cell {
+    background: var(--card);
+    border-radius: var(--radius, 10px);
+    padding: 14px;
+  }
+  .stock-summary .cell p:first-child { font-size: 11px; color: var(--ink-soft); margin: 0 0 6px; }
+  .stock-summary .cell p:last-child { font-weight: 600; font-size: 17px; margin: 0; color: var(--ink); }
+
+  .holding-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--bg-line);
+  }
+  .holding-name { font-size: 14px; font-weight: 500; margin: 0; }
+  .holding-detail { font-size: 11px; color: var(--ink-faint); margin: 3px 0 0; }
+  .holding-amount { font-family: 'IBM Plex Mono', monospace; font-size: 14px; text-align: right; }
+  .holding-yield { font-size: 11px; color: var(--gold); text-align: right; margin: 3px 0 0; }
+
+  /* ---- Bottom nav ---- */
+  nav.tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    max-width: 430px;
+    margin: 0 auto;
+    background: var(--tile);
+    border-top: 1px solid var(--bg-line);
+    display: flex;
+  }
+  nav.tabbar button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px 0 10px;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 11px;
+    color: var(--ink-faint);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  nav.tabbar button svg { width: 20px; height: 20px; stroke: var(--ink-faint); }
+  nav.tabbar button.active { color: var(--ink); }
+  nav.tabbar button.active svg { stroke: var(--gold); }
+
+  /* ---- Add button + sheet ---- */
+  .fab {
+    position: fixed;
+    bottom: 92px;
+    right: 20px;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+    cursor: pointer;
+  }
+
+  .sheet-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .sheet-backdrop.open { display: flex; }
+  .sheet {
+    background: var(--tile);
+    width: 100%;
+    max-width: 430px;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px 28px;
+    max-height: 82vh;
+    overflow-y: auto;
+  }
+  .sheet h3 {
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .sheet p.hint { font-size: 12px; color: var(--ink-soft); margin: 0 0 18px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .field label { font-size: 11px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
+  .field input, .field select {
+    width: 100%;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 13px;
+    padding: 9px 10px;
+    border: 1px solid var(--bg-line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+  }
+  .sheet-result {
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0 16px;
+    font-size: 12px;
+  }
+  .sheet-result div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .sheet-result span:last-child { font-family: 'IBM Plex Mono', monospace; color: var(--gold); font-weight: 500; }
+  .sheet button.submit {
+    width: 100%;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sheet button.close {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 13px;
+    display: block;
+    margin: 0 0 14px auto;
+    cursor: pointer;
+  }
+  .full-fields { display: block; }
+  .full-fields.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="wordmark">
+      <div class="logo-tile">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="9" width="14" height="8" rx="1.2" stroke="#F3EBDD" stroke-width="1.3"/><rect x="7" y="6" width="14" height="8" rx="1.2" stroke="#F3EBDD" stroke-width="1.3" fill="#1D1811"/><circle cx="14" cy="10" r="1.6" stroke="#D9A84E" stroke-width="1.3"/></svg>
+      </div>
+      <span>파이어보드</span>
+    </div>
+    <div class="today">2026.08.15 (토)</div>
+  </header>
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="view active" id="view-dashboard">
+    <div class="eyebrow">총자산</div>
+    <div class="hero-amount">₩312,400,000</div>
+    <div class="hero-sub up">▲ 지난달보다 2,150,000원</div>
+
+    <div class="divider"></div>
+
+    <h2>이번 달 배당·이자</h2>
+    <div class="hero-amount" style="font-size:28px;">₩418,200</div>
+    <div class="hero-sub">이자 210,400 · 배당 207,800</div>
+    <div class="hero-note">배당소득세 15.4% 원천징수 후 세후 기준</div>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" style="width:8.4%"></div></div>
+      <div class="progress-label">월 목표의 8%</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h2>파이어까지</h2>
+    <div class="goal-card featured">
+      <div class="goal-top">
+        <span class="goal-title">월 500만원 패시브인컴</span>
+        <span class="goal-target">목표자산 약 15억</span>
+      </div>
+      <div class="progress-row" style="margin-top:0;">
+        <div class="progress-track"><div class="progress-fill" style="width:62%"></div></div>
+        <div class="progress-label">62%</div>
+      </div>
+      <div class="goal-note">지금 흐름대로면(연 수익률 4.0% 기준) 2032년경 도달</div>
+    </div>
+
+    <div class="goal-card">
+      <div class="goal-top">
+        <span class="goal-title">내 집 마련 계약금</span>
+      </div>
+      <div class="goal-figure">3.1억 <span class="unit">/ 5억</span></div>
+      <div class="progress-row" style="margin-top:0;">
+        <div class="progress-track"><div class="progress-fill" style="width:62%"></div></div>
+        <div class="progress-label">62%</div>
+      </div>
+      <div class="goal-note">순자산의 일부를 이 목표로 배정 · 예상 도달 2028년 3월</div>
+    </div>
+  </section>
+
+  <!-- ===== ASSETS (보유 자산, 수동입력) ===== -->
+  <section class="view" id="view-assets">
+    <h2 style="margin-top:18px;">보유 자산</h2>
+    <p style="font-size:11px; color:var(--ink-faint); margin:-6px 0 14px;">아직 연동이 안 돼서 직접 등록한 계좌예요</p>
+    <div>
+
+      <div class="ledger-row" onclick="toggleRow('r1')">
+        <div class="row-icon">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="12" rx="1.5" stroke="#B4A896" stroke-width="1.3"/><line x1="3" y1="11" x2="21" y2="11" stroke="#B4A896" stroke-width="1.3"/></svg>
+        </div>
+        <div class="ledger-mid">
+          <p class="ledger-name">입출금 통장 (현금)</p>
+          <p class="ledger-detail">토스뱅크</p>
+        </div>
+        <div class="ledger-amount">42,000,000</div>
+      </div>
+      <div class="ledger-detailbox" id="r1">
+        <div><span>최근 업데이트</span><span>수동 입력</span></div>
+        <div><span>비중</span><span>13%</span></div>
+      </div>
+
+      <div class="ledger-row" onclick="toggleRow('r2')">
+        <div class="row-icon">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="9" width="14" height="8" rx="1.2" stroke="#B4A896" stroke-width="1.3"/><circle cx="10" cy="13" r="1.6" stroke="#D9A84E" stroke-width="1.3"/></svg>
+        </div>
+        <div class="ledger-mid">
+          <p class="ledger-name">26주 자유적금</p>
+          <p class="ledger-detail">카카오뱅크 · 3.8%</p>
+        </div>
+        <div class="ledger-amount">6,254,200</div>
+      </div>
+      <div class="ledger-detailbox" id="r2">
+        <div><span>오늘까지 누적 이자</span><span>86,400</span></div>
+        <div><span>만기까지</span><span>D-142</span></div>
+      </div>
+
+      <div class="ledger-row" onclick="toggleRow('r3')">
+        <div class="row-icon">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="9" width="14" height="8" rx="1.2" stroke="#B4A896" stroke-width="1.3"/><circle cx="10" cy="13" r="1.6" stroke="#D9A84E" stroke-width="1.3"/></svg>
+        </div>
+        <div class="ledger-mid">
+          <p class="ledger-name">주택청약종합저축</p>
+          <p class="ledger-detail">신한은행 · 96회차</p>
+        </div>
+        <div class="ledger-amount">14,400,000</div>
+      </div>
+      <div class="ledger-detailbox" id="r3">
+        <div><span>월 납입액</span><span>150,000</span></div>
+        <div><span>가입일</span><span>2018.04</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== STOCKS (자동연동) ===== -->
+  <section class="view" id="view-stocks">
+    <h2 style="margin-top:18px;">주식 포트폴리오</h2>
+    <p style="font-size:11px; color:var(--ink-faint); margin:-6px 0 14px;">한국투자증권 연동 · 오늘 오전 기준</p>
+
+    <div class="stock-summary">
+      <div class="cell"><p>평가금액</p><p>122,000,000</p></div>
+      <div class="cell"><p>이번 달 배당(세후)</p><p style="color:var(--gold);">207,800</p></div>
+    </div>
+
+    <div>
+      <div class="holding-row">
+        <div>
+          <p class="holding-name">SCHD (미국 배당 ETF)</p>
+          <p class="holding-detail">평단 78,200원 · 62주</p>
+        </div>
+        <div>
+          <div class="holding-amount">48,700,000</div>
+          <div class="holding-yield">배당률 3.4%</div>
+        </div>
+      </div>
+      <div class="holding-row">
+        <div>
+          <p class="holding-name">삼성전자</p>
+          <p class="holding-detail">평단 71,500원 · 340주</p>
+        </div>
+        <div>
+          <div class="holding-amount">28,900,000</div>
+          <div class="holding-yield">배당률 2.1%</div>
+        </div>
+      </div>
+      <div class="holding-row">
+        <div>
+          <p class="holding-name">JEPI (미국 커버드콜 ETF)</p>
+          <p class="holding-detail">평단 54,000원 · 410주</p>
+        </div>
+        <div>
+          <div class="holding-amount">44,400,000</div>
+          <div class="holding-yield">배당률 7.8%</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <button class="fab" onclick="openSheet()">+</button>
+
+  <nav class="tabbar">
+    <button class="active" data-view="dashboard" onclick="switchTab('dashboard', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+      대시보드
+    </button>
+    <button data-view="assets" onclick="switchTab('assets', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="1"/><path d="M3 10h18"/></svg>
+      보유자산
+    </button>
+    <button data-view="stocks" onclick="switchTab('stocks', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 L9 12 L13 15 L20 6"/></svg>
+      주식
+    </button>
+  </nav>
+
+  <div class="sheet-backdrop" id="sheet-backdrop">
+    <div class="sheet">
+      <button class="close" onclick="closeSheet()">닫기</button>
+      <h3>계좌 등록</h3>
+      <p class="hint">한 번만 입력하면 그 다음부터는 자동으로 계산돼요</p>
+
+      <div class="field-row">
+        <div class="field"><label>은행</label><select><option>카카오뱅크</option><option>신한은행</option><option>토스뱅크</option></select></div>
+        <div class="field">
+          <label>계좌 종류</label>
+          <select id="accType" onchange="toggleFields()">
+            <option value="cash">입출금 (현금)</option>
+            <option value="saving">적금</option>
+            <option value="deposit">예금</option>
+            <option value="sub">청약</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:10px;"><label>계좌 별칭</label><input type="text" placeholder="예: 생활비 통장"></div>
+
+      <div id="cashFields">
+        <div class="field" style="margin-bottom:10px;"><label>현재 잔액</label><input type="text" placeholder="42000000"></div>
+      </div>
+
+      <div id="rateFields" class="full-fields hidden">
+        <div class="field-row">
+          <div class="field"><label>원금 / 월 납입액</label><input type="text" id="amt" placeholder="500000" oninput="calc()"></div>
+          <div class="field"><label>금리 (세전)</label><input type="text" id="rate" placeholder="3.8" oninput="calc()"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>가입일</label><input type="date" id="startd" oninput="calc()"></div>
+          <div class="field"><label>만기일</label><input type="date" id="endd" oninput="calc()"></div>
+        </div>
+        <div class="sheet-result">
+          <div><span>오늘 기준 누적 이자(세후)</span><span id="out-interest">–</span></div>
+          <div><span>만기 예상 수령액</span><span id="out-total">–</span></div>
+        </div>
+      </div>
+
+      <button class="submit" onclick="closeSheet()">등록하기</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.tabbar button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function toggleRow(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function openSheet() { document.getElementById('sheet-backdrop').classList.add('open'); }
+function closeSheet() { document.getElementById('sheet-backdrop').classList.remove('open'); }
+
+function toggleFields() {
+  const type = document.getElementById('accType').value;
+  const cashFields = document.getElementById('cashFields');
+  const rateFields = document.getElementById('rateFields');
+  if (type === 'cash') {
+    cashFields.classList.remove('hidden');
+    rateFields.classList.add('hidden');
+  } else {
+    cashFields.classList.add('hidden');
+    rateFields.classList.remove('hidden');
+  }
+}
+
+function calc() {
+  const amount = parseFloat(document.getElementById('amt').value) || 0;
+  const rate = parseFloat(document.getElementById('rate').value) || 0;
+  const start = new Date(document.getElementById('startd').value);
+  const end = new Date(document.getElementById('endd').value);
+  const today = new Date('2026-08-15');
+
+  if (!amount || !rate || isNaN(start.getTime()) || isNaN(end.getTime())) {
+    document.getElementById('out-interest').textContent = '–';
+    document.getElementById('out-total').textContent = '–';
+    return;
+  }
+
+  const daysElapsed = Math.max(0, (today - start) / (1000 * 60 * 60 * 24));
+  const totalDays = Math.max(1, (end - start) / (1000 * 60 * 60 * 24));
+
+  const grossInterestToDate = amount * (rate / 100) * (daysElapsed / 365);
+  const netInterestToDate = Math.round(grossInterestToDate * 0.846);
+
+  const grossInterestFull = amount * (rate / 100) * (totalDays / 365);
+  const netTotal = Math.round(amount + grossInterestFull * 0.846);
+
+  document.getElementById('out-interest').textContent = netInterestToDate.toLocaleString() + '원';
+  document.getElementById('out-total').textContent = netTotal.toLocaleString() + '원';
+}
+</script>
+</body>
+</html>

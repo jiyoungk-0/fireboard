@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>파이어보드</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#17130F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="파이어보드">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #17130F;
+    --bg-line: rgba(243,235,221,0.1);
+    --ink: #F3EBDD;
+    --ink-soft: #B4A896;
+    --ink-faint: #766C5E;
+    --gold: #D9A84E;
+    --gold-dim: rgba(217,168,78,0.12);
+    --gold-border: rgba(217,168,78,0.35);
+    --up: #D9534A;
+    --down: #4A7FD9;
+    --card: rgba(243,235,221,0.05);
+    --card-border: rgba(243,235,221,0.08);
+    --tile: #1D1811;
+  }
+
+  * { box-sizing: border-box; }
+  .hidden { display: none !important; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--bg);
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    position: relative;
+  }
+
+  /* ---- Login screen ---- */
+  .login-screen {
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+    text-align: center;
+    gap: 18px;
+  }
+  .login-screen.hidden { display: none; }
+  .login-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--tile);
+    border: 1px solid var(--bg-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-logo svg { width: 30px; height: 30px; }
+  .login-title { font-size: 20px; font-weight: 700; margin: 0; }
+  .login-sub { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.6; }
+  .btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    padding: 13px 22px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .btn-google:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .login-error {
+    font-size: 12px;
+    color: var(--up);
+    min-height: 16px;
+  }
+
+  /* ---- Header / logo lockup ---- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(20px + env(safe-area-inset-top)) 20px 8px;
+  }
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-tile {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--tile);
+    border: 1px solid var(--bg-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-tile svg { width: 16px; height: 16px; }
+  .wordmark span {
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .today {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .icon-btn {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+  }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .icon-btn:focus-visible { outline: 1px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+
+  /* ---- Views ---- */
+  .view { display: none; padding: 4px 20px 20px; }
+  .view.active { display: block; }
+
+  .eyebrow {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 18px 0 6px;
+  }
+  .hero-amount {
+    font-weight: 700;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+  .hero-note {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+  .hero-compare {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-compare span.pct-up { color: var(--up); }
+  .hero-compare span.pct-down { color: var(--down); }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 3px;
+  }
+  .progress-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--bg-line);
+    margin: 26px 0;
+  }
+
+  h2 {
+    font-weight: 600;
+    font-size: 15px;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+
+  .section-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 18px;
+  }
+  .section-title-row h2 { margin: 0 0 12px; }
+  .section-total {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .currency-toggle {
+    display: flex;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .currency-toggle button {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .currency-toggle button.active { background: var(--gold); color: var(--bg); font-weight: 600; }
+  .currency-toggle button:focus-visible { outline: 1px solid var(--gold); outline-offset: 1px; }
+
+  .section-hint {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin: -6px 0 14px;
+  }
+  .disclaimer {
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-align: center;
+    margin: 20px 0 4px;
+    line-height: 1.5;
+  }
+
+  .empty-state {
+    font-size: 12px;
+    color: var(--ink-faint);
+    padding: 24px 0;
+    text-align: center;
+    border: 1px dashed var(--bg-line);
+    border-radius: 10px;
+  }
+
+  /* ---- Ledger rows ---- */
+  .ledger-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--bg-line);
+    cursor: pointer;
+  }
+  .drag-handle {
+    width: 22px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: 15px;
+    letter-spacing: -1px;
+    cursor: grab;
+    touch-action: none;
+    flex-shrink: 0;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .sortable-ghost { opacity: 0.35; }
+  .sortable-chosen .ledger-row, .sortable-chosen .holding-row {
+    background: var(--card);
+    border-radius: 10px;
+  }
+  .sortable-drag { opacity: 0.95; }
+  .row-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .row-icon svg { width: 16px; height: 16px; }
+  .ledger-mid p { margin: 0; }
+  .ledger-name { font-size: 14px; font-weight: 500; }
+  .ledger-detail { font-size: 11px; color: var(--ink-faint); margin-top: 2px !important; }
+  .ledger-amount {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .ledger-detailbox {
+    display: none;
+    padding: 0 0 14px 42px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--bg-line);
+  }
+  .ledger-detailbox.open { display: block; }
+  .ledger-detailbox div.kv { display: flex; justify-content: space-between; padding: 3px 0; }
+  .ledger-detailbox span:last-child { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  .row-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .row-actions .spacer { flex: 1; }
+  .row-delete, .row-edit {
+    background: none;
+    border: 1px solid var(--card-border);
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  .row-delete { color: var(--up); }
+  .row-edit { color: var(--gold); }
+  .pct-up { color: var(--up); }
+  .pct-down { color: var(--down); }
+
+  /* ---- Goal cards ---- */
+  .goal-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .goal-card.featured {
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+  }
+  .goal-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .goal-title { font-size: 13px; font-weight: 500; }
+  .goal-target { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-faint); }
+  .goal-figure {
+    font-weight: 700;
+    font-size: 21px;
+    margin-bottom: 8px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .goal-figure .unit { font-size: 13px; color: var(--ink-soft); font-weight: 400; }
+  .goal-note { font-size: 11px; color: var(--ink-soft); margin-top: 8px; }
+
+  /* ---- Stock holding rows ---- */
+  .stock-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .stock-summary .cell {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .stock-summary .cell p:first-child { font-size: 11px; color: var(--ink-soft); margin: 0 0 6px; }
+  .stock-summary .cell p.cell-value { font-weight: 600; font-size: 17px; margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stock-summary .cell p.cell-sub { font-size: 11px; font-weight: 500; margin: 3px 0 0; font-variant-numeric: tabular-nums; }
+
+  .holding-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--bg-line);
+    cursor: pointer;
+  }
+  .holding-name { font-size: 14px; font-weight: 500; margin: 0; }
+  .holding-detail { font-size: 11px; color: var(--ink-faint); margin: 3px 0 0; }
+  .holding-amount { font-family: 'IBM Plex Mono', monospace; font-size: 14px; text-align: right; font-variant-numeric: tabular-nums; }
+  .holding-yield { font-size: 11px; text-align: right; margin: 3px 0 0; }
+
+  /* ---- Bottom nav ---- */
+  nav.tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    max-width: 430px;
+    margin: 0 auto;
+    background: var(--tile);
+    border-top: 1px solid var(--bg-line);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav.tabbar button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px 0 10px;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 11px;
+    color: var(--ink-faint);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  nav.tabbar button:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; border-radius: 6px; }
+  nav.tabbar button svg { width: 20px; height: 20px; stroke: var(--ink-faint); }
+  nav.tabbar button.active { color: var(--ink); }
+  nav.tabbar button.active svg { stroke: var(--gold); }
+
+  /* ---- Add button + sheet ---- */
+  .fab {
+    position: fixed;
+    bottom: calc(92px + env(safe-area-inset-bottom));
+    right: 20px;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+    cursor: pointer;
+  }
+  .fab:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .sheet-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .sheet-backdrop.open { display: flex; }
+  .sheet {
+    background: var(--tile);
+    width: 100%;
+    max-width: 430px;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px calc(28px + env(safe-area-inset-bottom));
+    max-height: 82vh;
+    overflow-y: auto;
+  }
+  .sheet h3 {
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .sheet p.hint { font-size: 12px; color: var(--ink-soft); margin: 0 0 18px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .field label { font-size: 11px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
+  .field input, .field select {
+    width: 100%;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 13px;
+    padding: 9px 10px;
+    border: 1px solid var(--bg-line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+  }
+  .field input:focus-visible, .field select:focus-visible { outline: 1px solid var(--gold); outline-offset: 1px; }
+  .sheet-result {
+    background: var(--gold-dim);
+    border: 1px solid var(--gold-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 12px 0 16px;
+    font-size: 12px;
+  }
+  .sheet-result div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .sheet-result span:last-child { font-family: 'IBM Plex Mono', monospace; color: var(--gold); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .sheet button.submit {
+    width: 100%;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sheet button.submit:disabled { opacity: 0.5; cursor: default; }
+  .sheet button.submit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .sheet button.close {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 13px;
+    display: block;
+    margin: 0 0 14px auto;
+    cursor: pointer;
+  }
+  .sheet button.logout {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--up);
+    padding: 11px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .full-fields { display: block; }
+  .full-fields.hidden { display: none; }
+  .field-note { font-size: 11px; color: var(--ink-faint); margin: -4px 0 14px; }
+  .field-hint { font-size: 11px; color: var(--ink-soft); margin: 4px 2px 0; min-height: 14px; }
+  .hero-hint { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .goal-assumption { font-size: 11px; color: var(--ink-faint); margin: 2px 0 8px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div class="login-screen" id="login-screen">
+  <div class="login-logo">
+    <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="9" width="14" height="8" rx="1.2" stroke="#F3EBDD" stroke-width="1.3"/><rect x="7" y="6" width="14" height="8" rx="1.2" stroke="#F3EBDD" stroke-width="1.3" fill="#1D1811"/><circle cx="14" cy="10" r="1.6" stroke="#D9A84E" stroke-width="1.3"/></svg>
+  </div>
+  <p class="login-title">파이어보드</p>
+  <p class="login-sub">구글 계정으로 로그인하면<br>폰과 컴퓨터에서 같은 자산 데이터를 볼 수 있어요</p>
+  <button class="btn-google" id="btn-google-login">Google로 로그인</button>
+  <p class="login-error" id="login-error"></p>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="app hidden" id="app-root">
+
+  <header>
+    <div class="wordmark">
+      <div class="logo-tile">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="9" width="14" height="8" rx="1.2" stroke="#F3EBDD" stroke-width="1.3"/><rect x="7" y="6" width="14" height="8" rx="1.2" stroke="#F3EBDD" stroke-width="1.3" fill="#1D1811"/><circle cx="14" cy="10" r="1.6" stroke="#D9A84E" stroke-width="1.3"/></svg>
+      </div>
+      <span>파이어보드</span>
+    </div>
+    <div class="header-right">
+      <div class="today" id="today-label"></div>
+      <button class="icon-btn" id="btn-settings" aria-label="설정">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="view active" id="view-dashboard">
+    <div class="section-title-row" style="margin-top:0;">
+      <div class="eyebrow" style="margin:0;">총자산</div>
+      <div class="currency-toggle js-currency-toggle">
+        <button type="button" class="active" data-currency="KRW">원</button>
+        <button type="button" data-currency="USD">USD</button>
+      </div>
+    </div>
+    <div class="hero-amount" id="total-assets">₩0</div>
+    <div class="hero-hint" id="total-assets-hint">0원</div>
+    <div class="hero-compare" id="total-assets-compare"></div>
+
+    <div class="divider"></div>
+
+    <h2>이번 달 배당·이자</h2>
+    <div class="hero-amount" style="font-size:28px;" id="monthly-income">₩0</div>
+    <div class="hero-hint" id="monthly-income-hint">0원</div>
+    <div class="hero-sub" id="monthly-income-detail">이자 0 · 배당 0</div>
+    <div class="hero-note">세전 기준</div>
+    <div class="hero-compare" id="monthly-income-compare"></div>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="income-progress-fill" style="width:0%"></div></div>
+      <div class="progress-label" id="income-progress-label">월 목표의 0%</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h2>파이어까지 🔥</h2>
+    <div class="goal-card featured">
+      <div class="goal-top">
+        <span class="goal-title">패시브인컴 목표</span>
+        <span class="goal-target" id="fire-target-label">목표자산 -</span>
+      </div>
+      <div class="progress-row" style="margin-top:0;">
+        <div class="progress-track"><div class="progress-fill" id="fire-progress-fill" style="width:0%"></div></div>
+        <div class="progress-label" id="fire-progress-label">0%</div>
+      </div>
+      <div class="goal-assumption" id="fire-assumption">예상 연 배당률 0% 가정 · 세전 기준 역산</div>
+      <div class="goal-note">설정에서 월 목표 소득과 연 배당률을 바꿀 수 있어요</div>
+    </div>
+    <p class="disclaimer">이 앱은 특정 투자를 추천하지 않아요</p>
+  </section>
+
+  <!-- ===== ASSETS ===== -->
+  <section class="view" id="view-assets">
+    <div class="section-title-row" style="margin-top:18px;">
+      <h2 style="margin:0;">보유 자산</h2>
+      <div class="currency-toggle js-currency-toggle">
+        <button type="button" class="active" data-currency="KRW">원</button>
+        <button type="button" data-currency="USD">USD</button>
+      </div>
+    </div>
+
+    <div class="stock-summary" style="grid-template-columns:1fr;">
+      <div class="cell">
+        <p>전체 합계</p>
+        <p class="cell-value" id="assets-grand-total">0</p>
+        <p class="cell-sub" id="assets-grand-total-compare"></p>
+      </div>
+    </div>
+
+    <div class="section-title-row">
+      <h2>계좌</h2>
+      <span class="section-total" id="assets-accounts-total">0원</span>
+    </div>
+    <div id="assets-list"></div>
+
+    <div class="divider"></div>
+    <div class="section-title-row">
+      <h2>주식</h2>
+      <span class="section-total" id="assets-stocks-total">0원</span>
+    </div>
+    <div id="assets-stocks-list"></div>
+  </section>
+
+  <!-- ===== STOCKS ===== -->
+  <section class="view" id="view-stocks">
+    <div class="section-title-row" style="margin-top:18px;">
+      <h2>주식 포트폴리오</h2>
+      <div class="currency-toggle js-currency-toggle" id="stock-currency-toggle">
+        <button type="button" class="active" data-currency="KRW">원</button>
+        <button type="button" data-currency="USD">USD</button>
+      </div>
+    </div>
+
+    <div class="stock-summary">
+      <div class="cell">
+        <p>평가금액 (현재가 기준)</p>
+        <p class="cell-value" id="stock-total">0</p>
+        <p class="cell-sub" id="stock-gain-summary">0원 (0%)</p>
+      </div>
+      <div class="cell"><p>이번달 예상 배당(세전)</p><p class="cell-value" style="color:var(--gold);" id="stock-dividend">0</p></div>
+    </div>
+
+    <div class="field" style="margin-bottom:14px;">
+      <label>정렬</label>
+      <select id="stock-sort-select">
+        <option value="manual">내가 정한 순서</option>
+        <option value="yield-desc">수익률 높은순</option>
+        <option value="yield-asc">수익률 낮은순</option>
+        <option value="value-desc">투자금액 큰순</option>
+        <option value="value-asc">투자금액 작은순</option>
+        <option value="name">가나다순</option>
+        <option value="broker">증권사순</option>
+      </select>
+    </div>
+
+    <div id="stocks-list"></div>
+    <p class="disclaimer">이 앱은 특정 투자를 추천하지 않아요</p>
+  </section>
+
+  <button class="fab" id="btn-fab" aria-label="추가">+</button>
+
+  <nav class="tabbar">
+    <button class="active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+      대시보드
+    </button>
+    <button data-view="assets">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="1"/><path d="M3 10h18"/></svg>
+      보유자산
+    </button>
+    <button data-view="stocks">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 L9 12 L13 15 L20 6"/></svg>
+      주식
+    </button>
+  </nav>
+
+  <!-- ===== 계좌/종목 등록 시트 ===== -->
+  <div class="sheet-backdrop" id="sheet-backdrop">
+    <div class="sheet">
+      <button class="close" id="btn-sheet-close">닫기</button>
+      <h3 id="sheet-title">계좌 등록</h3>
+      <p class="hint" id="sheet-hint">한 번만 입력하면 그 다음부터는 자동으로 계산돼요</p>
+
+      <form id="account-form">
+        <div class="field" style="margin-bottom:10px;">
+          <label id="institution-label">은행</label>
+          <select id="f-institution"></select>
+        </div>
+        <div class="field" id="f-institution-other-field" style="margin-bottom:10px; display:none;"><label>직접 입력</label><input type="text" id="f-institution-other" placeholder="이름을 입력하세요"></div>
+
+        <div id="accountOnlyFields">
+          <div class="field-row">
+            <div class="field">
+              <label>계좌 종류</label>
+              <select id="f-kind">
+                <option value="cash">입출금 (현금)</option>
+                <option value="saving">적금</option>
+                <option value="deposit">예금</option>
+                <option value="sub">청약</option>
+              </select>
+            </div>
+            <div class="field"><label>계좌 별칭</label><input type="text" id="f-nickname" placeholder="예: 생활비 통장"></div>
+          </div>
+
+          <div class="field" id="accountCurrencyField" style="margin-bottom:10px;">
+            <label>통화</label>
+            <select id="f-account-currency">
+              <option value="KRW">원화 (KRW)</option>
+              <option value="USD">달러 (USD)</option>
+            </select>
+          </div>
+
+          <div id="cashFields">
+            <div class="field" style="margin-bottom:10px;">
+              <label>현재 잔액</label>
+              <input type="text" inputmode="decimal" id="f-balance" placeholder="42,000,000">
+              <div class="field-hint" id="f-balance-hint"></div>
+            </div>
+          </div>
+
+          <div id="rateFields" class="full-fields hidden">
+            <div class="field" id="freqField" style="margin-bottom:10px;">
+              <label>납입 방식</label>
+              <select id="f-freq">
+                <option value="lump">거치식 (한 번에 넣고 만기까지 보유)</option>
+                <option value="monthly">매월 납입</option>
+                <option value="weekly">매주 납입</option>
+                <option value="daily">매일 납입</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label id="f-amount-label">원금</label>
+                <input type="text" inputmode="decimal" id="f-amount" placeholder="500,000">
+                <div class="field-hint" id="f-amount-hint"></div>
+              </div>
+              <div class="field" id="rateField"><label>금리 (세전, %)</label><input type="number" inputmode="decimal" step="0.01" id="f-rate" placeholder="3.8"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>가입일</label><input type="date" id="f-start"></div>
+              <div class="field" id="endDateField"><label>만기일</label><input type="date" id="f-end"></div>
+            </div>
+            <div class="field hidden" id="subPaidField" style="margin-bottom:10px;">
+              <label>현재까지 납입 총액</label>
+              <input type="text" inputmode="decimal" id="f-sub-paid" placeholder="14,400,000">
+              <div class="field-hint" id="f-sub-paid-hint"></div>
+            </div>
+            <p class="field-note hidden" id="subRateNote">청약은 정부 고시 예치기간별 차등금리가 자동 적용돼요 · 1개월 미만 0% · 1년 미만 2.3% · 2년 미만 2.8% · 2년 이상 3.1% (세전, 2026.03 기준 · 정부 정책에 따라 변동 가능) · 월 납입액은 참고용이고, 실제 잔액은 위 "현재까지 납입 총액"을 직접 갱신해주세요</p>
+            <div class="sheet-result">
+              <div><span id="out-interest-label">오늘 기준 누적 이자(세전)</span><span id="out-interest">–</span></div>
+              <div id="out-total-row"><span id="out-total-label">만기 예상 수령액</span><span id="out-total">–</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="stockFields" class="full-fields hidden">
+          <div class="field" style="margin-bottom:10px;">
+            <label>종목명</label>
+            <input type="text" id="f-stock-name" list="stock-name-list" placeholder="예: SCHD (미국 배당 ETF)" autocomplete="off">
+            <datalist id="stock-name-list"></datalist>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>통화</label>
+              <select id="f-stock-currency">
+                <option value="KRW">원화 (KRW)</option>
+                <option value="USD">달러 (USD)</option>
+              </select>
+            </div>
+            <div class="field"><label>보유 수량</label><input type="text" inputmode="decimal" id="f-stock-shares" placeholder="62"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>평단가</label><input type="text" inputmode="decimal" id="f-stock-avg" placeholder="78,200"></div>
+            <div class="field"><label>현재가</label><input type="text" inputmode="decimal" id="f-stock-price" placeholder="82,500"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>배당률 (연, %)</label><input type="number" inputmode="decimal" step="0.01" id="f-stock-yield" placeholder="3.4"></div>
+            <div class="field">
+              <label>배당 주기</label>
+              <select id="f-stock-divfreq">
+                <option value="monthly">매월 (월배당)</option>
+                <option value="quarterly">분기 (3개월마다)</option>
+                <option value="semiannual">반기 (6개월마다)</option>
+                <option value="annual">연 1회</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row hidden" id="f-stock-divmonth-field">
+            <div class="field"><label>지급월 (최근 또는 다음)</label>
+              <select id="f-stock-divmonth">
+                <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+                <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+                <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+                <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+              </select>
+            </div>
+          </div>
+          <p class="field-note" id="f-stock-div-hint">예: SCHD는 분기(3,6,9,12월), JEPI/JEPQ는 매월 지급이에요</p>
+        </div>
+
+        <p class="login-error" id="form-error"></p>
+        <button type="submit" class="submit" id="btn-submit">등록하기</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== 설정 시트 ===== -->
+  <div class="sheet-backdrop" id="settings-backdrop">
+    <div class="sheet">
+      <button class="close" id="btn-settings-close">닫기</button>
+      <h3>설정</h3>
+      <p class="hint">목표 금액은 대시보드 진행률 계산에 쓰여요</p>
+
+      <form id="settings-form">
+        <div class="field-row">
+          <div class="field">
+            <label>월 배당·이자 목표</label>
+            <input type="text" inputmode="decimal" id="s-income-goal" placeholder="5,000,000">
+            <div class="field-hint" id="s-income-goal-hint"></div>
+          </div>
+          <div class="field"><label>예상 연 배당률(%)</label><input type="number" inputmode="decimal" step="0.1" id="s-yield" placeholder="4.0"></div>
+        </div>
+        <div class="sheet-result">
+          <div><span>필요한 파이어 목표자산</span><span id="s-fire-target-computed">–</span></div>
+        </div>
+        <button type="submit" class="submit">저장하기</button>
+      </form>
+      <button class="logout" id="btn-logout">로그아웃</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
