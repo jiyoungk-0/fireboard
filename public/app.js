@@ -612,7 +612,7 @@ function renderAssets() {
   }).join('');
 
   list.querySelectorAll('[data-toggle]').forEach(row => {
-    row.addEventListener('click', () => $(row.dataset.toggle).classList.toggle('open'));
+    row.addEventListener('click', (e) => { if (e.target.closest('.drag-handle')) return; $(row.dataset.toggle).classList.toggle('open'); });
   });
   list.querySelectorAll('[data-delete-account]').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -723,7 +723,7 @@ function renderHoldingList(containerId, prefix, displayCurrency = 'KRW', list_ =
   }).join('');
 
   list.querySelectorAll('[data-toggle]').forEach(row => {
-    row.addEventListener('click', () => $(row.dataset.toggle).classList.toggle('open'));
+    row.addEventListener('click', (e) => { if (e.target.closest('.drag-handle')) return; $(row.dataset.toggle).classList.toggle('open'); });
   });
   list.querySelectorAll('[data-delete-holding]').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -883,14 +883,14 @@ function updatePreview() {
   const rate = parseFloat($('f-rate').value) || 0;
   const end = $('f-end').value;
   const freq = $('f-freq').value;
-  if (!amount || !rate || !start || !end) {
+  if (!amount || !rate || !start) {
     $('out-interest').textContent = '–';
     $('out-total').textContent = '–';
     return;
   }
   const { netInterestToDate, netTotal } = computeInterest(amount, rate, start, end, freq);
   $('out-interest').textContent = formatPlain(netInterestToDate) + '원';
-  $('out-total').textContent = formatPlain(netTotal) + '원';
+  $('out-total').textContent = end ? formatPlain(netTotal) + '원' : '만기일 미입력';
 }
 
 $('account-form').addEventListener('submit', async (e) => {
